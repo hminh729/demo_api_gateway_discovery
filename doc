@@ -1,129 +1,155 @@
-tạo thêm thư mục eureka_server và product_service, order_service, api_gateway
-
-🎯 Bối cảnh
+BỐI CẢNH E-LEARNING
 
 Client (React) → localhost:5173
-
 API Gateway → localhost:8080
-
-Product Service → localhost:8081
-
-Order Service → localhost:8082
-
+Course Service → localhost:8081
+Enrollment Service → localhost:8082
 Eureka Server → localhost:8761
 
-🚀 LUỒNG CLIENT ĐẶT HÀNG
+👉 Kiến trúc dùng:
 
-Giả sử user đang ở trang DetailProduct.tsx và bấm Đặt hàng.
+Netflix style microservices
+
+Spring Cloud Gateway
+
+Netflix Eureka
+
+Spring Boot Microservices
+
+🚀 LUỒNG USER ĐĂNG KÝ KHÓA HỌC
+
+Giả sử user đang ở trang CourseDetail.tsx và bấm Enroll Now
 
 🥇 BƯỚC 1 — Client gọi API Gateway
 
 React gửi request:
 
-POST http://localhost:8080/api/orders
+POST http://localhost:8080/api/enrollments
 Content-Type: application/json
 
 {
-  "productId": 1,
-  "quantity": 2
+  "courseId": 10,
+  "userId": 5
 }
 
 👉 Client chỉ gọi Gateway (8080)
-👉 Client không biết Order chạy ở 8082
+👉 Client không biết Enrollment chạy ở 8082
 
-Đây là North-South traffic
+Đây là North-South Traffic
 
 🥈 BƯỚC 2 — Gateway xử lý
 
 Gateway:
 
-Match route /api/orders
+Match route:
 
+/api/enrollments
 
+Sau đó hỏi Eureka:
 
-Hỏi Eureka:
+ENROLLMENT-SERVICE ở đâu?
 
-ORDER-SERVICE đang ở đâu?
+Eureka trả:
 
-Gateway nhận được:
+ENROLLMENT-SERVICE → localhost:8082
 
-ORDER-SERVICE → localhost:8082
+Gateway forward:
 
-Sau đó Gateway forward request sang:
+POST http://localhost:8082/api/enrollments
+🥉 BƯỚC 3 — Enrollment Service xử lý
 
-POST http://localhost:8082/api/orders
-🥉 BƯỚC 3 — Order Service xử lý
+Enrollment Service nhận request.
 
-Order Service nhận request.
+Bên trong logic đăng ký:
 
-Bên trong logic tạo đơn:
+Cần kiểm tra khóa học có tồn tại không
 
-Order cần kiểm tra sản phẩm tồn tại
+Cần kiểm tra còn chỗ không
 
-Nó phải gọi Product Service
-
-Nhưng nó không gọi cứng:
+Nó KHÔNG gọi cứng:
 
 http://localhost:8081 ❌
 
-Mà nó hỏi Eureka:
+Mà hỏi Eureka:
 
-PRODUCT-SERVICE ở đâu?
+COURSE-SERVICE ở đâu?
 
 Eureka trả:
 
 localhost:8081
 
-Order gọi:
+Enrollment gọi:
 
-GET http://localhost:8081/api/products/1
+GET http://localhost:8081/api/courses/10
 
-Đây gọi là East-West traffic
+👉 Đây là East-West Traffic
 
 🏁 BƯỚC 4 — Trả response ngược lại
 
 Luồng trả về:
 
-Product → Order → Gateway → Client
+Course Service
+↓
+Enrollment Service
+↓
+Gateway
+↓
+Client
 
 Client nhận:
 
 {
-  "orderId": 1001,
+  "enrollmentId": 5001,
   "status": "SUCCESS"
 }
-📌 Tóm gọn toàn bộ luồng
+📌 TÓM GỌN LUỒNG E-LEARNING
 React (5173)
    ↓
 API Gateway (8080)
    ↓
-Order Service (8082)
+Enrollment Service (8082)
    ↓
 Eureka (8761)
    ↓
-Product Service (8081)
-🔥 Phân tích kiến trúc để bạn thuyết trình
-1️⃣ Client không biết service thật sự chạy ở đâu
+Course Service (8081)
+🔥 PHÂN TÍCH KIẾN TRÚC (ĐỂ THUYẾT TRÌNH)
+1️⃣ Client không biết service thật sự ở đâu
 
 → Giảm coupling
+→ Dễ thay đổi port, scale
 
 2️⃣ Gateway là entry point duy nhất
 
-→ Tập trung bảo mật
+→ Tập trung:
 
-3️⃣ Order không hardcode IP Product
+Authentication (JWT)
 
-→ Nhờ Discovery
+Logging
 
-4️⃣ Nếu Product scale thành 2 instance
+Rate limiting
 
-Eureka sẽ trả 1 trong 2
+CORS
+
+3️⃣ Enrollment không hardcode Course
+
+→ Dùng Service Discovery
+→ Hệ thống linh hoạt
+
+4️⃣ Nếu Course Service scale 3 instance
+
+Ví dụ:
+
+8081
+8083
+8084
+
+Eureka sẽ trả 1 instance bất kỳ
+
 → Load balancing tự động
 
-🎯 Câu trả lời ngắn gọn cho thầy
+🎯 CÂU TRẢ LỜI NGẮN GỌN CHO THẦY
 
-Client gửi request đến Gateway.
-Gateway dựa vào route config và Eureka để forward đến Order Service.
-Order Service tiếp tục dùng Discovery để tìm Product Service.
+Client gửi request đến API Gateway.
+Gateway dựa vào route config và Eureka để forward đến Enrollment Service.
+Enrollment Service tiếp tục dùng Service Discovery để tìm Course Service.
 Response đi ngược lại theo cùng đường.
-
