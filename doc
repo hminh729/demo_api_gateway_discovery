@@ -1,0 +1,129 @@
+tạo thêm thư mục eureka_server và product_service, order_service
+
+🎯 Bối cảnh
+
+Client (React) → localhost:5173
+
+API Gateway → localhost:8080
+
+Product Service → localhost:8081
+
+Order Service → localhost:8082
+
+Eureka Server → localhost:8761
+
+🚀 LUỒNG CLIENT ĐẶT HÀNG
+
+Giả sử user đang ở trang DetailProduct.tsx và bấm Đặt hàng.
+
+🥇 BƯỚC 1 — Client gọi API Gateway
+
+React gửi request:
+
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 2
+}
+
+👉 Client chỉ gọi Gateway (8080)
+👉 Client không biết Order chạy ở 8082
+
+Đây là North-South traffic
+
+🥈 BƯỚC 2 — Gateway xử lý
+
+Gateway:
+
+Match route /api/orders
+
+
+
+Hỏi Eureka:
+
+ORDER-SERVICE đang ở đâu?
+
+Gateway nhận được:
+
+ORDER-SERVICE → localhost:8082
+
+Sau đó Gateway forward request sang:
+
+POST http://localhost:8082/api/orders
+🥉 BƯỚC 3 — Order Service xử lý
+
+Order Service nhận request.
+
+Bên trong logic tạo đơn:
+
+Order cần kiểm tra sản phẩm tồn tại
+
+Nó phải gọi Product Service
+
+Nhưng nó không gọi cứng:
+
+http://localhost:8081 ❌
+
+Mà nó hỏi Eureka:
+
+PRODUCT-SERVICE ở đâu?
+
+Eureka trả:
+
+localhost:8081
+
+Order gọi:
+
+GET http://localhost:8081/api/products/1
+
+Đây gọi là East-West traffic
+
+🏁 BƯỚC 4 — Trả response ngược lại
+
+Luồng trả về:
+
+Product → Order → Gateway → Client
+
+Client nhận:
+
+{
+  "orderId": 1001,
+  "status": "SUCCESS"
+}
+📌 Tóm gọn toàn bộ luồng
+React (5173)
+   ↓
+API Gateway (8080)
+   ↓
+Order Service (8082)
+   ↓
+Eureka (8761)
+   ↓
+Product Service (8081)
+🔥 Phân tích kiến trúc để bạn thuyết trình
+1️⃣ Client không biết service thật sự chạy ở đâu
+
+→ Giảm coupling
+
+2️⃣ Gateway là entry point duy nhất
+
+→ Tập trung bảo mật
+
+3️⃣ Order không hardcode IP Product
+
+→ Nhờ Discovery
+
+4️⃣ Nếu Product scale thành 2 instance
+
+Eureka sẽ trả 1 trong 2
+→ Load balancing tự động
+
+🎯 Câu trả lời ngắn gọn cho thầy
+
+Client gửi request đến Gateway.
+Gateway dựa vào route config và Eureka để forward đến Order Service.
+Order Service tiếp tục dùng Discovery để tìm Product Service.
+Response đi ngược lại theo cùng đường.
+
