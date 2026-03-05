@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Database cho Course Service
+  course-db:
+    image: postgres:14
+    container_name: course-db
+    ports:
+      - "5433:5432" # Map ra port 5433 để tránh trùng nếu máy bạn có Postgres sẵn
+    environment:
+      POSTGRES_DB: course_db
+      POSTGRES_USER: ${COURSE_DB_USER}
+      POSTGRES_PASSWORD: ${COURSE_DB_PASSWORD}
+    volumes:
+      - course_db_data:/var/lib/postgresql/data
+
+  # Database cho Enrollment Service
+  enrollment-db:
+    image: postgres:14
+    container_name: enrollment-db
+    ports:
+      - "5434:5432" # Map ra port 5434
+    environment:
+      POSTGRES_DB: enrollment_db
+      POSTGRES_USER: ${ENROLLMENT_DB_USER}
+      POSTGRES_PASSWORD: ${ENROLLMENT_DB_PASSWORD}
+    volumes:
+      - enrollment_db_data:/var/lib/postgresql/data
+
+volumes:
+  course_db_data:
+  enrollment_db_data:
