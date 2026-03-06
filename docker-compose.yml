@@ -27,6 +27,13 @@ services:
     volumes:
       - enrollment_db_data:/var/lib/postgresql/data
 
+  # zipkin
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
 volumes:
   course_db_data:
   enrollment_db_data:
