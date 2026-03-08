@@ -87,6 +87,36 @@ services:
     ports:
       - "9411:9411"
 
+  # keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: keycloak2
+    depends_on:
+      - eureka-server
+      - keycloak-db
+    ports:
+      - "8085:8080"
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: ${KC_DB}
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+
+  # keycloak db
+  keycloak-db:
+    image: postgres:14
+    container_name: keycloak-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: ${KC_DB_USERNAME}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+
+
 volumes:
   course_db_data:
   enrollment_db_data:
