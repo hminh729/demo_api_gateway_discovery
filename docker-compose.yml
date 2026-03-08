@@ -27,6 +27,59 @@ services:
     volumes:
       - enrollment_db_data:/var/lib/postgresql/data
 
+  # eureka server
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+
+  # api gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    depends_on:
+      - eureka-server
+      - zipkin
+    env_file:
+      - ./api-gateway/.env.prod
+    ports:
+      - "8080:8080"
+
+  # course service
+  course-service:
+    build: ./course-service
+#    container_name: course-service
+    depends_on:
+      - course-db
+      - enrollment-db
+      - eureka-server
+      - zipkin
+      - api-gateway
+#    ports:
+#      - "8081:8081"
+    env_file:
+      - ./course-service/.env.prod
+
+
+  # enrollment service
+  enrollment-service:
+    build: ./enrollment-service
+    container_name: enrollment-service
+    depends_on:
+      - course-db
+      - enrollment-db
+      - zipkin
+      - api-gateway
+      - eureka-server
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./enrollment-service/.env.prod
+
+
+
+
   # zipkin
   zipkin:
     image: openzipkin/zipkin
